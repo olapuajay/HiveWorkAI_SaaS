@@ -7,7 +7,9 @@ import morgan from "morgan";
 dotenv.config();
 
 import authRoutes from "../src/routes/authRoutes.js";
-import exployeeRoutes from "../src/routes/employeeRoutes.js";
+import employeeRoutes from "../src/routes/employeeRoutes.js";
+import attendanceRoutes from "../src/routes/attendanceRoutes.js";
+import leaveRoutes from "../src/routes/leaveRoutes.js";
 
 const app = express();
 
@@ -17,11 +19,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "WorkHiveAI API Running" });
+  res.json({ success: true, message: "HiveWorkAI API Running" });
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/employees", exployeeRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/leaves", leaveRoutes);
 
 app.use(errorHandler);
 
