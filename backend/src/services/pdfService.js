@@ -1,12 +1,13 @@
 import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
+import cloudinary from "../config/cloudinary.js";
 
 export const generatePayslipPDF = async (data) => {
   const doc = new PDFDocument();
-  const filePath = path.join("uploads", `payslip-${data.employeeId}-${Date.now()}.pdf`);
+  const tempPath = path.join("uploads", `payslip-${data.employeeId}-${Date.now()}.pdf`);
 
-  doc.pipe(fs.createWriteStream(filePath));
+  doc.pipe(fs.createWriteStream(tempPath));
   doc.fontSize(18).text("Payslip", { align: "center" });
   doc.moveDown();
 
@@ -18,5 +19,15 @@ export const generatePayslipPDF = async (data) => {
 
   doc.end();
 
-  return filePath;
+  await new Promise((resolve) => doc.on("end", resolve));
+
+  const uploadResult = await cloudinary.uploader.upload(tempPath, {
+    folder: "payslips",
+    resource_type: "raw",
+    flags: "attachment",
+  });
+
+  fs.unlinkSync(tempPath);
+
+  return uploadResult.secure_url;
 };

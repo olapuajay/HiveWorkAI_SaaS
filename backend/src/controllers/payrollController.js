@@ -1,8 +1,10 @@
 import Payroll from "../models/Payroll.js";
 import Payslip from "../models/Payslip.js";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
 import { calculateGrossSalary, calculateLOPDays } from "../services/payrollService.js";
 import { generatePayslipPDF } from "../services/pdfService.js";
+import { getIO } from "../config/socket.js";
 
 export const generatePayroll = async (req, res, next) => {
   try {
@@ -31,7 +33,7 @@ export const generatePayroll = async (req, res, next) => {
       lopDays
     });
 
-    const pdfPath = await generatePayslipPDF({
+    const pdfUrl = await generatePayslipPDF({
       employeeId,
       name: employee.name,
       month,
@@ -43,7 +45,20 @@ export const generatePayroll = async (req, res, next) => {
 
     const payslip = await Payslip.create({
       payroll: payroll._id,
-      pdfUrl: pdfPath
+      pdfUrl,
+    });
+
+    await Notification.create({
+      company: req.company._id,
+      user: employee._id,
+      type: "SYSTEM",
+      title: "Payslip Generated",
+      message: `Your payslip for ${month}/${year} is ready`
+    });
+
+    getIO().to(employee._id.toString()).emit("notification:new", {
+      title: "Payslip Generated",
+      message: `Your payslip for ${month}/${year} is ready`
     });
 
     res.status(201).json({ success: true, payroll, payslip });
@@ -76,3 +91,21 @@ export const getCompanyPayroll = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getMyPayslips = async (req, res, next) => {
+  try {
+    const payslips = await Payslip.find()
+      .populate({
+        path: "payroll",
+        match: {
+          employee: req.user.userId,
+          company: req.company._id
+        }
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, payslips });
+  } catch (error) {
+    next(error);
+  }
+}
