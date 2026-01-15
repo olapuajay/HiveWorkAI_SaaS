@@ -10,6 +10,15 @@ export const initSocket = (server) => {
     },
   });
 
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if(!token) {
+      console.log("Socket rejected: No Token");
+      return next(new Error("Unauthorized"));
+    }
+    next();
+  });
+
   io.on("connection", (socket) => {
     console.log("Socket connected: ", socket.id);
 

@@ -10,21 +10,26 @@ export const login = createAsyncThunk(
   }
 );
 
+const token = localStorage.getItem("token");
+const user = localStorage.getItem("user");
+const role = localStorage.getItem("role");
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
-    role: null,
-    token: null,
+    user: user ? JSON.parse(user) : null,
+    role: role || null,
+    token: token || null,
     error: null,
     loading: false,
   },
-  reducer: {
+  reducers: {
     logout: (state) => {
       state.user = null;
       state.role = null;
       state.token = null;
       localStorage.clear();
+      window.location.href = "/";
       disconnectSocket();
     },
   },
@@ -41,9 +46,11 @@ const authSlice = createSlice({
         state.role = role;
 
         localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("role", role);
         localStorage.setItem("tenant", tenant);
 
-        connectSocket(token);
+        // connectSocket(token);
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;

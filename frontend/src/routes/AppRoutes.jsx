@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
@@ -7,6 +7,7 @@ import AppLayout from "../layouts/AppLayout";
 import Auth from "../pages/Auth";
 import Dashboard from "../pages/Dashboard";
 import Landing from "../pages/Landing";
+import { connectSocket } from "../app/socket";
 
 const ProtectedRoute = ({ children }) => {
   const token = useSelector((state) => state.auth.token);
@@ -14,6 +15,14 @@ const ProtectedRoute = ({ children }) => {
 }
 
 function AppRoutes() {
+  const token = useSelector((state) => state.auth.token);
+
+  useEffect(() => {
+    if (token) {
+      connectSocket(token);
+    }
+  }, [token]);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -32,15 +41,6 @@ function AppRoutes() {
             <PublicLayout>
               <Auth />
             </PublicLayout>
-          }
-        />
-
-        <Route
-          path="/app"
-          element={
-            <AppLayout>
-              <Dashboard />
-            </AppLayout>
           }
         />
 
