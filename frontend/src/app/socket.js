@@ -1,4 +1,6 @@
 import { io } from "socket.io-client";
+import { store } from "./store";
+import { socketClockIn, socketClockOut } from "../features/attendance/attendanceSlice";
 
 export const socket = io(import.meta.env.VITE_SOCKET_URL, {
   autoConnect: false,
@@ -13,6 +15,13 @@ export const connectSocket = (token) => {
 
   socket.auth = { token };
   socket.connect();
+
+  socket.on("attendance:clockIn", (data) => {
+    store.dispatch(socketClockIn(data));
+  });
+  socket.on("attendance:clockOut", (data) => {
+    store.dispatch(socketClockOut(data));
+  });
 };
 
 export const disconnectSocket = () => {

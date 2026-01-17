@@ -2,9 +2,18 @@ import Leave from "../models/Leave.js";
 import { calculateLeaveDays } from "../services/leaveService.js";
 import { getIO } from "../config/socket.js";
 
-export const applyleave  = async (req, res, next) => {
+export const applyleave = async (req, res, next) => {
   try {
     const { type, reason, startDate, endDate } = req.body;
+    if (!startDate || !endDate || !type) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      return res
+        .status(400)
+        .json({ message: "End date cannot be before start date" });
+    }
 
     const totalDays = calculateLeaveDays(startDate, endDate);
 
@@ -15,12 +24,12 @@ export const applyleave  = async (req, res, next) => {
       reason,
       startDate,
       endDate,
-      totalDays
+      totalDays,
     });
 
     getIO().emit("leave:applied", {
       employeeId: req.user.userId,
-      totalDays
+      totalDays,
     });
 
     res.status(201).json({ success: true, leave });
@@ -33,7 +42,7 @@ export const getMyLeaves = async (req, res, next) => {
   try {
     const leaves = await Leave.find({
       employee: req.user.userId,
-      company: req.company._id
+      company: req.company._id,
     }).sort({ createdAt: -1 });
 
     res.json({ success: true, leaves });
@@ -45,7 +54,7 @@ export const getMyLeaves = async (req, res, next) => {
 export const getCompanyLeaves = async (req, res, next) => {
   try {
     const leaves = await Leave.find({
-      company: req.company._id
+      company: req.company._id,
     })
       .populate("employee", "name department")
       .sort({ createdAt: -1 });
@@ -60,29 +69,29 @@ export const reviewLeave = async (req, res, next) => {
   try {
     const { status } = req.body;
 
-    if(!["APPROVED", "REJECTED"].includes(status)) {
+    if (!["APPROVED", "REJECTED"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
     const leave = await Leave.findOneAndUpdate(
       {
         _id: req.params.id,
-        company: req.company._id
+        company: req.company._id,
       },
       {
         status,
-        reviewedBy: req.user.userId
+        reviewedBy: req.user.userId,
       },
-      { new: true }
+      { new: true },
     );
 
-    if(!leave) {
+    if (!leave) {
       res.status(404).json({ message: "Leave not found" });
     }
 
     getIO().emit("leave:reviewed", {
       leaveId: leave._id,
-      status
+      status,
     });
 
     res.json({ success: true, leave });
